@@ -112,6 +112,18 @@ int main()
       test.execute( HasError { false } );
       test.execute( IsClosed { true } );
     }
+
+    {
+      ByteStreamTestHarness test { "okay pop more bytes than are in the buffer", 15 };
+      test.execute( Push { "hello" } );
+      test.execute( Pop { 10 } ); // make sure it doesnt crash here
+
+      // should have drained the buffered bytes and reclaimed capacity
+      test.execute( BytesBuffered { 0 } );
+      test.execute( BytesPopped { 5 } );
+      test.execute( AvailableCapacity { 15 } );
+    }
+
   } catch ( const exception& e ) {
     cerr << "Exception: " << e.what() << "\n";
     return EXIT_FAILURE;
