@@ -1,5 +1,5 @@
 Checks:
-   '*,-altera-*,-llvmlibc-*,-google-build-using-namespace,-modernize-use-trailing-return-type,-readability-implicit-bool-conversion,-*-non-private-member-variables-in-classes,-modernize-use-nodiscard,-*-magic-numbers,-readability-identifier-length,-concurrency-mt-unsafe,-llvm-header-guard,-fuchsia-default-arguments-calls,-fuchsia-default-arguments-declarations,-fuchsia-overloaded-operator,-android-cloexec-accept,-cppcoreguidelines-pro-type-vararg,-hicpp-vararg,-hicpp-signed-bitwise,-misc-include-cleaner,-readability-redundant-member-init,-boost-use-ranges,-portability-template-virtual-member-function'
+   '*,-altera-*,-llvmlibc-*,-google-build-using-namespace,-modernize-use-trailing-return-type,-readability-implicit-bool-conversion,-*-non-private-member-variables-in-classes,-modernize-use-nodiscard,-*-magic-numbers,-readability-identifier-length,-concurrency-mt-unsafe,-llvm-header-guard,-fuchsia-default-arguments-calls,-fuchsia-default-arguments-declarations,-fuchsia-overloaded-operator,-android-cloexec-accept,-cppcoreguidelines-pro-type-vararg,-hicpp-vararg,-hicpp-signed-bitwise,-misc-include-cleaner,-readability-redundant-member-init,-boost-use-ranges,-portability-template-virtual-member-function,-portability-avoid-pragma-once'
 
 WarningsAsErrors:
    '*'
