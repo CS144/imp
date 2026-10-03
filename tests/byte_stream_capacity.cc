@@ -9,6 +9,27 @@ int main()
 {
   try {
     {
+      ByteStreamTestHarness test { "zero capacity", 0 };
+
+      test.execute( IsClosed { false } );
+      test.execute( IsFinished { false } );
+      test.execute( BufferEmpty { true } );
+      test.execute( AvailableCapacity { 0 } );
+
+      test.execute( Push { "x" } );
+
+      test.execute( BytesPushed { 0 } );
+      test.execute( BytesPopped { 0 } );
+      test.execute( BytesBuffered { 0 } );
+      test.execute( AvailableCapacity { 0 } );
+      test.execute( Peek { "" } );
+
+      test.execute( Close {} );
+      test.execute( IsClosed { true } );
+      test.execute( IsFinished { true } );
+    }
+
+    {
       ByteStreamTestHarness test { "overwrite", 2 };
 
       test.execute( Push { "cat" } );
