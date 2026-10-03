@@ -246,6 +246,30 @@ int main()
 
       test.execute( IsFinished( true ) );
     }
+
+    {
+      ReassemblerTestHarness test { "remember FIN after clipping its payload", 2 };
+
+      // Only "b" fits now, but FIN announces that the stream ends at index 4.
+      test.execute( Insert { "bcd", 1 }.is_last() );
+      test.execute( BytesPushed( 0 ) );
+      test.execute( BytesPending( 1 ) );
+      test.execute( IsClosed( false ) );
+
+      test.execute( Insert { "a", 0 } );
+      test.execute( BytesPushed( 2 ) );
+      test.execute( ReadAll( "ab" ) );
+      test.execute( IsClosed( false ) );
+
+      // The retransmission need not repeat FIN; the saved EOF index is enough.
+      test.execute( Insert { "cd", 2 } );
+      test.execute( BytesPushed( 4 ) );
+      test.execute( BytesPending( 0 ) );
+      test.execute( IsClosed( true ) );
+      test.execute( IsFinished( false ) );
+      test.execute( ReadAll( "cd" ) );
+      test.execute( IsFinished( true ) );
+    }
   } catch ( const exception& e ) {
     cerr << "Exception: " << e.what() << "\n";
     return EXIT_FAILURE;
