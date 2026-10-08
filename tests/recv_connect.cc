@@ -104,6 +104,19 @@ int main()
       test.execute( ReadAll { "world" } );
     }
 
+    // The first SYN, rather than the most recent SYN, establishes the ISN.
+    {
+      const uint32_t first_isn = 12345;
+      const uint32_t later_isn = 54321;
+      TCPReceiverTestHarness test { "Later SYN cannot replace the original ISN", 4000 };
+
+      test.execute( SegmentArrives {}.with_syn().with_seqno( first_isn ) );
+      test.execute( ExpectAckno { Wrap32 { first_isn + 1 } } );
+
+      test.execute( SegmentArrives {}.with_syn().with_seqno( later_isn ) );
+      test.execute( ExpectAckno { Wrap32 { first_isn + 1 } } );
+    }
+
     {
       TCPReceiverTestHarness test { "window size zero", 0 };
       test.execute( ExpectWindow { 0 } );
