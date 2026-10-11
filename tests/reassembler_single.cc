@@ -45,6 +45,17 @@ int main()
       test.execute( IsFinished { true } );
     }
 
+    // credit: kpa
+    {
+      ReassemblerTestHarness test { "zero available capacity and close", 1 };
+
+      test.execute( Insert { "a", 0 } );
+      test.execute( Insert { "", 1 }.is_last() );
+
+      test.execute( ReadAll( "a" ) );
+      test.execute( IsFinished { true } );
+    }
+
     {
       ReassemblerTestHarness test { "insert b @ 0 [last]", 65000 };
 
