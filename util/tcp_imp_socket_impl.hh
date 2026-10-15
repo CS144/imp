@@ -47,7 +47,7 @@ void TCPImpSocket<AdaptT>::_tcp_loop( const std::function<bool()>& condition )
 //! \param[in] datagram_interface is the interface for reading and writing datagrams
 template<TCPDatagramAdapter AdaptT>
 TCPImpSocket<AdaptT>::TCPImpSocket( std::pair<FileDescriptor, FileDescriptor> data_socket_pair,
-                                          AdaptT&& datagram_interface )
+                                    AdaptT&& datagram_interface )
   : LocalStreamSocket( std::move( data_socket_pair.first ) )
   , _datagram_adapter( std::move( datagram_interface ) )
   , _thread_data( std::move( data_socket_pair.second ) )
@@ -181,8 +181,7 @@ inline std::pair<SocketType, SocketType> socket_pair_helper( int domain, int typ
 //! \param[in] datagram_interface is the underlying interface (e.g. to UDP, IP, or Ethernet)
 template<TCPDatagramAdapter AdaptT>
 TCPImpSocket<AdaptT>::TCPImpSocket( AdaptT&& datagram_interface )
-  : TCPImpSocket( socket_pair_helper<LocalStreamSocket>( AF_UNIX, SOCK_STREAM ),
-                     std::move( datagram_interface ) )
+  : TCPImpSocket( socket_pair_helper<LocalStreamSocket>( AF_UNIX, SOCK_STREAM ), std::move( datagram_interface ) )
 {}
 
 template<TCPDatagramAdapter AdaptT>
