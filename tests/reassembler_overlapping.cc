@@ -32,6 +32,11 @@ int main()
       test.execute( Insert { "ab", 0 } );
       test.execute( ReadAll( "b" ) );
       test.execute( BytesPushed( 2 ) );
+
+      test.execute( Insert { "a", 0 } );
+      test.execute( ReadAll( "" ) );
+      test.execute( BytesPushed( 2 ) );
+      test.execute( BytesPending( 0 ) );
     }
 
     {
