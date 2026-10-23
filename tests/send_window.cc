@@ -138,6 +138,22 @@ int main()
       test.execute( ExpectNoSegment {} );
     }
 
+    {
+      TCPConfig cfg;
+      const Wrap32 isn( rd() );
+      cfg.isn = isn;
+
+      TCPSenderTestHarness test { "Piggyback FIN in SYN segment when space is available", cfg };
+      test.execute( Receive { { {}, 2 } }.without_push() );
+      test.execute( Close {} );
+      test.execute( ExpectMessage {}.with_syn( true ).with_fin( true ).with_payload_size( 0 ).with_seqno( isn ) );
+      test.execute( ExpectSeqnosInFlight { 2 } );
+      test.execute( ExpectNoSegment {} );
+      test.execute( AckReceived { Wrap32 { isn + 2 } }.with_win( 2 ) );
+      test.execute( ExpectSeqnosInFlight { 0 } );
+      test.execute( ExpectNoSegment {} );
+    }
+
     // credit: Jad Bitar
     {
       TCPConfig cfg;
