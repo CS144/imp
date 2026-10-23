@@ -884,6 +884,37 @@ int main()
 
       test.execute( HasError { false } );
     }
+
+    // test credit: Jason Hu
+    {
+      TCPConfig cfg;
+      const Wrap32 isn( rd() );
+      cfg.isn = isn;
+
+      TCPSenderTestHarness test {
+        "Don't add FIN if in-flight data and the current segment max out the receiver window", cfg };
+      test.execute( Push {} );
+      test.execute( ExpectMessage {}.with_no_flags().with_syn( true ).with_payload_size( 0 ).with_seqno( isn ) );
+      test.execute( AckReceived { Wrap32 { isn + 1 } }.with_win( 6 ) );
+      test.execute( ExpectNoSegment {} );
+
+      // Use half the window, then leave it unacked.
+      test.execute( Push { "aaa" } );
+      test.execute( ExpectMessage {}.with_no_flags().with_data( "aaa" ).with_seqno( isn + 1 ) );
+      test.execute( ExpectSeqnosInFlight { 3 } );
+
+      // FIN does not fit in the receiver window.
+      test.execute( Push { "bbb" }.with_close() );
+      test.execute( ExpectMessage {}.with_no_flags().with_data( "bbb" ).with_seqno( isn + 4 ) );
+      test.execute( ExpectSeqnosInFlight { 6 } );
+      test.execute( ExpectNoSegment {} );
+
+      // FIN should be sent by itself.
+      test.execute( AckReceived { Wrap32 { isn + 7 } }.with_win( 1 ) );
+      test.execute( ExpectMessage {}.with_fin( true ).with_payload_size( 0 ).with_seqno( isn + 7 ) );
+      test.execute( ExpectSeqnosInFlight { 1 } );
+      test.execute( ExpectNoSegment {} );
+    }
   } catch ( const exception& e ) {
     cerr << e.what() << "\n";
     return 1;
