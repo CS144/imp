@@ -186,6 +186,17 @@ int main()
       }
     }
 
+    // credit: kpa
+    {
+      const TCPConfig cfg;
+      TCPSenderTestHarness test { "Short peek fragments must be coalesced", cfg };
+      test.execute( Push { "abc" } );
+      test.execute( Push { "def" } );
+      test.execute( ExpectMessage {}.with_syn( true ) );
+      test.execute( AckReceived { Wrap32 { cfg.isn + 1 } }.with_win( 1000 ) );
+      test.execute( ExpectMessage {}.with_data( "abcdef" ) );
+    }
+
     {
       TCPConfig cfg;
       const Wrap32 isn( rd() );
