@@ -198,6 +198,21 @@ int main()
       test.execute( ExpectSeqnosInFlight { 0 } );
       test.execute( HasError { false } );
     }
+
+    // credit: kpa
+    {
+      const TCPConfig cfg;
+      TCPSenderTestHarness test { "Partial ack resets RTO and consecutive retransmissions", cfg };
+      test.execute( Push { "abc" } );
+      test.execute( ExpectMessage {}.with_syn( true ) );
+      test.execute( AckReceived { Wrap32 { cfg.isn + 1 } } );
+      test.execute( ExpectMessage {}.with_data( "abc" ) );
+      test.execute( Tick( cfg.rt_timeout - 1U ) );
+      test.execute( AckReceived { Wrap32 { cfg.isn + 3 } } );
+      test.execute( Tick( 1U ) );
+      test.execute( ExpectConsecutiveRetransmissions { 0 } );
+      test.execute( ExpectNoSegment {} );
+    }
   } catch ( const exception& e ) {
     cerr << e.what() << "\n";
     return 1;
