@@ -156,6 +156,21 @@ int main()
       test.execute( ExpectReset { false } );
     }
 
+    // credit: kpa
+    {
+      const TCPConfig cfg;
+      TCPSenderTestHarness test { "Send SYN and FIN only once", cfg };
+      test.execute( Push {} );
+      test.execute( ExpectMessage {}.with_syn( true ) );
+      test.execute( Push {} );
+      test.execute( ExpectNoSegment {} );
+      test.execute( AckReceived { Wrap32 { cfg.isn + 1 } }.with_win( 2 ) );
+      test.execute( Push {}.with_close() );
+      test.execute( ExpectMessage {}.with_fin( true ) );
+      test.execute( Push {}.with_close() );
+      test.execute( ExpectNoSegment {} );
+    }
+
   } catch ( const exception& e ) {
     cerr << e.what() << "\n";
     return 1;
