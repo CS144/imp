@@ -1007,6 +1007,63 @@ int main()
       test.execute(
         ExpectFrame { make_frame( local_eth, target_eth, EthernetHeader::TYPE_IPv4, serialize( datagram ) ) } );
     }
+
+    // test credit: allybush
+    {
+      const EthernetAddress local_eth = random_private_ethernet_address();
+      const EthernetAddress remote_eth = random_private_ethernet_address();
+
+      NetworkInterfaceTestHarness test {
+        "30 second timeout for IP/ethernet mappings blocking 5 second timeout for ARP requests",
+        local_eth,
+        Address( "8.8.8.8", 0 ) };
+
+      // Send ARP to create a mapping to other ethernet addr. Starts 30 second countdown for that specific mapping.
+      test.execute( ReceiveFrame { make_frame(
+        remote_eth,
+        ETHERNET_BROADCAST,
+        EthernetHeader::TYPE_ARP,
+        serialize( make_arp( ARPMessage::OPCODE_REQUEST, remote_eth, "80.112.1.0", {}, "8.8.8.8" ) ) ) } );
+
+      // We send a reply to this telling them our IP address
+      test.execute( ExpectFrame { make_frame(
+        local_eth,
+        remote_eth,
+        EthernetHeader::TYPE_ARP,
+        serialize( make_arp( ARPMessage::OPCODE_REPLY, local_eth, "8.8.8.8", remote_eth, "80.112.1.0" ) ) ) } );
+
+      // now send a datagram to a second IP at 1.1.1.1. Will need to send ARP request because this IP is unknown
+      const auto datagram = make_datagram( "8.8.8.8", "1.1.1.1" );
+      test.execute( SendDatagram { datagram, Address( "1.1.1.1", 0 ) } );
+
+      // Expect outgoing ARP request to be sent
+      test.execute( ExpectFrame {
+        make_frame( local_eth,
+                    ETHERNET_BROADCAST,
+                    EthernetHeader::TYPE_ARP,
+                    serialize( make_arp( ARPMessage::OPCODE_REQUEST, local_eth, "8.8.8.8", {}, "1.1.1.1" ) ) ) } );
+
+      // ARP request to 1.1.1.1 expires.
+      test.execute( Tick { 5001 } );
+
+      // Try sending it again. If all goes well, then the 30 second mapping shouldn't affect the
+      // 5 second ARP timeout (may be an issue with queue implementations where 30 second timeout at the queue front
+      // blocks ARP timeouts, and that error is not properly handled in the send_datagram code.)
+      test.execute( SendDatagram { datagram, Address( "1.1.1.1", 0 ) } );
+      test.execute( ExpectFrame {
+        make_frame( local_eth,
+                    ETHERNET_BROADCAST,
+                    EthernetHeader::TYPE_ARP,
+                    serialize( make_arp( ARPMessage::OPCODE_REQUEST, local_eth, "8.8.8.8", {}, "1.1.1.1" ) ) ) } );
+
+      // we should also still have the mapping from 30 seconds ago working!
+      const auto datagram2 = make_datagram( "8.8.8.8", "80.112.1.0" );
+      test.execute( SendDatagram { datagram2, Address( "80.112.1.0", 0 ) } );
+      test.execute(
+        ExpectFrame { make_frame( local_eth, remote_eth, EthernetHeader::TYPE_IPv4, serialize( datagram2 ) ) } );
+      test.execute( ExpectNoFrame {} );
+    }
+
   } catch ( const exception& e ) {
     cerr << e.what() << "\n";
     return EXIT_FAILURE;
