@@ -1007,6 +1007,22 @@ int main()
       test.execute(
         ExpectFrame { make_frame( local_eth, target_eth, EthernetHeader::TYPE_IPv4, serialize( datagram ) ) } );
     }
+
+    // credit: kpa
+    {
+      const EthernetAddress local_eth = random_private_ethernet_address();
+      const EthernetAddress rogue_eth = random_private_ethernet_address();
+
+      NetworkInterfaceTestHarness test {
+        "frames with malformed IPv4 payloads are dropped", local_eth, Address( "1.2.3.4", 0 ) };
+
+      // Create a frame with malformed (empty) IPv4 datagram payload
+      const EthernetFrame bad_frame = make_frame( rogue_eth, local_eth, EthernetHeader::TYPE_IPv4, {} );
+
+      // Expect the frame to be dropped
+      test.execute( ReceiveFrame { bad_frame } );
+      test.execute( ExpectNoFrame {} );
+    }
   } catch ( const exception& e ) {
     cerr << e.what() << "\n";
     return EXIT_FAILURE;
