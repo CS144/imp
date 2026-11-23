@@ -414,6 +414,63 @@ void network_simulator()
     }
   }
 
+  cout << green << "\n\nTesting a /32 host route..." << normal << "\n\n";
+  {
+    Router router {};
+    auto addr0 = random_router_ethernet_address();
+    auto addr1 = random_router_ethernet_address();
+    auto addr2 = random_router_ethernet_address();
+
+    auto frames0 = make_shared<FramesOut>();
+    auto frames1 = make_shared<FramesOut>();
+    auto frames2 = make_shared<FramesOut>();
+
+    auto eth0 = make_shared<NetworkInterface>( "eth0", frames0, addr0, Address { "18.241.0.1" } );
+    auto eth1 = make_shared<NetworkInterface>( "eth1", frames1, addr1, Address { "10.0.0.1" } );
+    auto eth2 = make_shared<NetworkInterface>( "eth2", frames2, addr2, Address { "192.168.0.1" } );
+
+    auto eth0_id = router.add_interface( eth0 );
+    auto eth1_id = router.add_interface( eth1 );
+    auto eth2_id = router.add_interface( eth2 );
+
+    router.add_route( ip( "10.0.0.0" ), 8, {}, eth1_id );
+    router.add_route( ip( "10.0.0.5" ), 32, {}, eth0_id );
+
+    InternetDatagram dg1 { { .len = 20,
+                             .ttl = 64,
+                             .src = Address { "192.168.0.2" }.ipv4_numeric(),
+                             .dst = Address { "10.0.0.5" }.ipv4_numeric() } };
+    dg1.header.compute_checksum();
+
+    router.interface( eth2_id )->recv_frame(
+      { .header = { .dst = addr2, .src = random_host_ethernet_address(), .type = EthernetHeader::TYPE_IPv4 },
+        .payload = serialize( dg1 ) } );
+
+    router.route();
+
+    frames0->expect_frame();
+    if ( ( !frames0->frames.empty() ) or ( !frames1->frames.empty() ) or ( !frames2->frames.empty() ) ) {
+      throw runtime_error( "router sent an unexpected frame (10.0.0.5 should match the /32 route)" );
+    }
+
+    InternetDatagram dg2 { { .len = 20,
+                             .ttl = 64,
+                             .src = Address { "192.168.0.2" }.ipv4_numeric(),
+                             .dst = Address { "10.0.0.4" }.ipv4_numeric() } };
+    dg2.header.compute_checksum();
+
+    router.interface( eth2_id )->recv_frame(
+      { .header = { .dst = addr2, .src = random_host_ethernet_address(), .type = EthernetHeader::TYPE_IPv4 },
+        .payload = serialize( dg2 ) } );
+
+    router.route();
+
+    frames1->expect_frame();
+    if ( ( !frames0->frames.empty() ) or ( !frames1->frames.empty() ) or ( !frames2->frames.empty() ) ) {
+      throw runtime_error( "router sent an unexpected frame (10.0.0.4 should match the /8, not the /32)" );
+    }
+  }
+
   cout << "\n\n\033[32;1mCongratulations! All datagrams were routed successfully.\033[m\n";
 }
 } // namespace
